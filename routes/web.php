@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\RepuestoController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+//Route::prefix('api')->group(function () {
+   // Route::apiResource('repuestos', RepuestoController::class);
+//});
