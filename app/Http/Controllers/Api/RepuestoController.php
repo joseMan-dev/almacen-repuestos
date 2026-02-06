@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\MOdels\Repuesto;
+use Illuminate\Support\Facades\DB;
 
 class RepuestoController extends Controller
 {
@@ -69,5 +70,38 @@ class RepuestoController extends Controller
     {
         $repuesto->delete();
         return response()->noContent();
+    }
+
+    public function retirar(Request $request)
+    {
+        $data = $request->validate([
+            'referencia' => ['required', 'string'],
+            'cantidad' => ['required', 'integer', 'min:1'],
+
+        ]);
+        return DB::transaction(function () use ($data) {
+            $repuesto = Repuesto::where('referencia', $data['referencia'])
+            ->lockForUpdate()
+            ->first();
+        if (!$repuesto) {
+            return response()->json(['message' => 'Referencia no encontrada'], 404);
+        }
+
+        if ($repuesto->stock_actual < $data['cantidad']) {
+            return response()->json(['message' => 'Stock insuficiente'], 400);
+            
+        }
+
+        $repuesto->decrement('stock_actual', $data['cantidad']);
+        $repuesto->refresh();
+
+        return response()->json([
+            'message' => 'Retirada correcta',
+            'data' => $repuesto
+        ]);
+
+
+        
+      });
     }
 }
