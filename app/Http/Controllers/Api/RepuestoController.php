@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRepuestoRequest;
+use App\Http\Requests\UpdateRepuestoRequest;
 use Illuminate\Http\Request;
 use App\MOdels\Repuesto;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class RepuestoController extends Controller
 {
@@ -20,18 +23,11 @@ class RepuestoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRepuestoRequest $request) : JsonResponse
     {
-       $data = $request->validate([
-        'referencia' => 'required|string|max:50|unique:repuestos,referencia',
-        'nombre' => 'required|string|max:120',
-        'descripcion' => 'nullable|string',
-        'categoria' => 'nullable|string|max:80',
-        'ubicacion' => 'nullable|string|max:80',
-        'stock_actual' => 'nullable|integer|min:0',
-        'stock_minimo' => 'nullable|integer|min:0',
-       ]);
-       return Repuesto::create($data);
+       $repuesto = Repuesto::create($request->validated());
+
+       return response()-> json($repuesto, 201);
     }
 
     /**
@@ -45,22 +41,11 @@ class RepuestoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Repuesto $repuesto)
+    public function update(UpdateRepuestoRequest $request, Repuesto $repuesto) 
     {
-        $data = $request->validate([
+        $repuesto->update($request->validated());
 
-        'referencia' => 'required|string|max:50|unique:repuestos,referencia' . $repuesto->id,
-        'nombre' => 'required|string|max:120',
-        'descripcion' => 'nullable|string',
-        'categoria' => 'nullable|string|max:80',
-        'ubicacion' => 'nullable|string|max:80',
-        'stock_actual' => 'nullable|integer|min:0',
-        'stock_minimo' => 'nullable|integer|min:0',
-
-        ]);
-
-        $repuesto->update($data);
-        return $repuesto;
+        return response() -> json($repuesto);
     }
 
     /**
