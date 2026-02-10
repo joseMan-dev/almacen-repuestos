@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RetirarRepuestoRequest;
 use App\Http\Requests\StoreRepuestoRequest;
 use App\Http\Requests\UpdateRepuestoRequest;
 use Illuminate\Http\Request;
@@ -57,36 +58,41 @@ class RepuestoController extends Controller
         return response()->noContent();
     }
 
-    public function retirar(Request $request)
+    public function retirar(RetirarRepuestoRequest $request)
     {
-        $data = $request->validate([
-            'referencia' => ['required', 'string'],
-            'cantidad' => ['required', 'integer', 'min:1'],
-
-        ]);
-        return DB::transaction(function () use ($data) {
+        $data = $request->validated();
+        
+        $repuesto = DB::transaction(function () use ($data) {
             $repuesto = Repuesto::where('referencia', $data['referencia'])
             ->lockForUpdate()
             ->first();
+
         if (!$repuesto) {
-            return response()->json(['message' => 'Referencia no encontrada'], 404);
+            return null;
         }
 
         if ($repuesto->stock_actual < $data['cantidad']) {
-            return response()->json(['message' => 'Stock insuficiente'], 400);
+            return 'STOCK_INSUFICIENTE';
             
         }
 
         $repuesto->decrement('stock_actual', $data['cantidad']);
-        $repuesto->refresh();
+        $repuesto->fresh();
+        });
+
+        if ($repuesto === null) {
+            return response()->json(['message' => 'Referencia no encontrada'], 404);
+        }
+
+        if ($repuesto === 'STOCK_INSUFICIENTE') {
+            return response()->json(['message' => 'Stock insuficiente'], 422);
+        }
 
         return response()->json([
             'message' => 'Retirada correcta',
-            'data' => $repuesto
+            'data' => $repuesto,
         ]);
 
-
         
-      });
     }
 }
